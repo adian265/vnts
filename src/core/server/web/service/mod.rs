@@ -169,7 +169,7 @@ impl VntsWebService {
         };
         println!("create_wg_config: {:#?}", wg_data);
         // 将 wg_data 序列化为 JSON 并写入文件
-        match to_string_pretty(&wg_data) {
+        match to_string_pretty(&wireguard_config) {
             Ok(json) => {
                 match File::create("wg_cfg.json") {
                     Ok(mut file) => {

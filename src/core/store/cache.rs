@@ -8,9 +8,7 @@ use serde::{Serialize, Deserialize};
 use std::fs::File;
 use std::io::Read; // 确保导入 Read 特性
 use serde_json::from_str; // 确保导入 from_str 函数
-use crate::core::server::web::vo::res::{
-    ClientInfo, ClientStatusInfo, GroupList, NetworkInfo, WGData, WgConfig,
-};
+
 
 use crate::cipher::Aes256GcmCipher;
 use crate::core::entity::{NetworkInfo, WireGuardConfig};
@@ -122,33 +120,18 @@ impl AppCache {
                     println!("读取文件失败: {}", e);
                     return cache;
                 }
-                match from_str::<Vec<WGData>>(&content) {
-                    Ok(wg_data_list) => {
-                        println!("read_wg_config: {:#?}", wg_data_list);
-                        for wg_data in wg_data_list {
-                            if let Some(public_key_str) = wg_data.config.public_key {
-                                if let Ok(public_key_bytes) = general_purpose::STANDARD.decode(&public_key_str) {
-                                    if let Ok(public_key) = public_key_bytes.try_into() {
-                                        let wireguard_config = WireGuardConfig {
-                                            vnts_endpoint: wg_data.config.vnts_endpoint.clone(),
-                                            vnts_allowed_ips: wg_data.config.vnts_allowed_ips.clone(),
-                                            group_id: wg_data.group_id.clone(),
-                                            device_id: wg_data.device_id.clone(),
-                                            ip: wg_data.virtual_ip,
-                                            prefix: wg_data.config.prefix,
-                                            persistent_keepalive: wg_data.config.persistent_keepalive,
-                                            secret_key: wg_data.config.secret_key.clone().try_into().unwrap_or_else(|_| [0u8; 32]),
-                                            public_key,
-                                        };
-                                        cache.wg_group_map.insert(public_key, wireguard_config);
-                                    } else {
-                                        println!("公钥转换失败");
-                                    }
+                match from_str::<Vec<WireGuardConfig>>(&content) {
+                    Ok(wg_config_list) => {
+                        println!("read_wg_config: {:#?}", wg_config_list);
+                        for wireguard_config in wg_config_list {
+                            if let Ok(public_key_bytes) = general_purpose::STANDARD.decode(&wireguard_config.public_key) {
+                                if let Ok(public_key) = public_key_bytes.try_into() {
+                                    cache.wg_group_map.insert(public_key, wireguard_config);
                                 } else {
-                                    println!("公钥解析失败");
+                                    println!("公钥转换失败");
                                 }
                             } else {
-                                println!("公钥为空");
+                                println!("公钥解析失败");
                             }
                         }
                     }
@@ -161,6 +144,7 @@ impl AppCache {
                 println!("打开文件失败: {}", e);
             }
         }
+
         cache
     }
 }
