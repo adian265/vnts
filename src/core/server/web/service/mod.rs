@@ -113,28 +113,28 @@ impl VntsWebService {
             let netmask = self.config.netmask;
             let network = Ipv4Network::with_netmask(gateway, netmask)?;
             let network = Ipv4Network::with_netmask(network.network(), netmask)?;
-            let virtual_ip = if wg_data.virtual_ip.trim().is_empty() {
-                Ipv4Addr::UNSPECIFIED
-            } else {
-                Ipv4Addr::from_str(&wg_data.virtual_ip).context("虚拟IP错误")?
-            };
-            let config = WgConfig {
-            vnts_endpoint: wg_data.config.vnts_endpoint,
-            vnts_public_key: general_purpose::STANDARD.encode(&self.config.wg_public_key),
-            vnts_allowed_ips: network.to_string(),
-            public_key: general_purpose::STANDARD.encode(public_key),
-            private_key: general_purpose::STANDARD.encode(secret_key),
-            ip: response.virtual_ip,
-            prefix: network.prefix(),
-            persistent_keepalive: wg_data.config.persistent_keepalive,
-            };
-            let wg_data = WGData {
-                group_id,
-                virtual_ip: response.virtual_ip,
-                device_id,
-                name: wg_data.name,
-                config,
-            };
+            // let virtual_ip = if wg_data.virtual_ip.trim().is_empty() {
+            //     Ipv4Addr::UNSPECIFIED
+            // } else {
+            //     Ipv4Addr::from_str(&wg_data.virtual_ip).context("虚拟IP错误")?
+            // };
+            // let config = WgConfig {
+            // vnts_endpoint: wg_data.config.vnts_endpoint,
+            // vnts_public_key: general_purpose::STANDARD.encode(&self.config.wg_public_key),
+            // vnts_allowed_ips: network.to_string(),
+            // public_key: general_purpose::STANDARD.encode(public_key),
+            // private_key: general_purpose::STANDARD.encode(secret_key),
+            // ip: response.virtual_ip,
+            // prefix: network.prefix(),
+            // persistent_keepalive: wg_data.config.persistent_keepalive,
+            // };
+            // let wg_data = WGData {
+            //     group_id,
+            //     virtual_ip: response.virtual_ip,
+            //     device_id,
+            //     name: wg_data.name,
+            //     config,
+            // };
         }
         // let register_client_request = RegisterClientRequest {
         //     group_id: group_id.clone(),
