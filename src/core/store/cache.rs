@@ -15,7 +15,7 @@ use crate::cipher::Aes256GcmCipher;
 use crate::core::entity::{NetworkInfo, WireGuardConfig};
 use crate::core::store::expire_map::ExpireMap;
 
-#[derive(Clone)]
+#[derive(Clone,Debug)]
 pub struct AppCache {
     // group -> NetworkInfo
     pub virtual_network: ExpireMap<String, Arc<RwLock<NetworkInfo>>>,
