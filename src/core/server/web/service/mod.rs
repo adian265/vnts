@@ -111,9 +111,10 @@ impl VntsWebService {
         //     Err(anyhow!("设备id不能为空"))?;
         // }
         let cache = &self.cache;
-        for d in cache.wg_group_map.iter() {
-            println!("{:?}", d);
-        }
+        wg_group_map.iter().for_each(|entry| println!("{:?}", entry)); 
+        // for d in cache.wg_group_map.iter() {
+        //     println!("{:#?}", d);
+        // }
         // let (secret_key, public_key) = Self::check_wg_config(&wg_data.config)?;
         // let gateway = self.config.gateway;
         // let netmask = self.config.netmask;
