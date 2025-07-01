@@ -107,12 +107,12 @@ impl VntsWebService {
         for d in cache.wg_group_map.iter() {
             let device_id = d.device_id.clone();
             let group_id = d.group_id.clone();
-            let secret_key = d.secret_key.clone();
-            let public_key = d.public_key.clone();
-            let gateway = self.config.gateway;
-            let netmask = self.config.netmask;
-            let network = Ipv4Network::with_netmask(gateway, netmask)?;
-            let network = Ipv4Network::with_netmask(network.network(), netmask)?;
+            // let secret_key = d.secret_key.clone();
+            // let public_key = d.public_key.clone();
+            // let gateway = self.config.gateway;
+            // let netmask = self.config.netmask;
+            // let network = Ipv4Network::with_netmask(gateway, netmask)?;
+            // let network = Ipv4Network::with_netmask(network.network(), netmask)?;
             // let virtual_ip = if wg_data.virtual_ip.trim().is_empty() {
             //     Ipv4Addr::UNSPECIFIED
             // } else {
