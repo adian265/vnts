@@ -166,7 +166,7 @@ impl VntsWebService {
         let f = "wg.json";
         match serde_json::to_string_pretty(wg_data) {
             Ok(json) => {
-                match std::fs::write(path, json) {
+                match std::fs::write(f, json) {
                     Ok(_) => Ok(()),
                     Err(e) => Err(format!("写入JSON文件失败: {}", e)),
                 }
