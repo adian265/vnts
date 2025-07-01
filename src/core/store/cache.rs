@@ -117,7 +117,7 @@ impl AppCache {
         match File::open("wg.json") { // 修改文件名为 "wg.json"
             Ok(mut file) => {
                 let mut content = String::new();
-                println!("cache:{}",cache);
+                println!("cache:{:#?}",cache);
                 if let Err(e) = file.read_to_string(&mut content) {
                     println!("读取文件失败: {}", e);
                     return cache;
