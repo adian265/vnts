@@ -4,6 +4,7 @@ use std::net::{Ipv4Addr, SocketAddr};
 use std::sync::Arc;
 use std::time::Duration;
 
+use serde::{Serialize, Deserialize};
 use std::fs::File;
 use std::io::Read; // 确保导入 Read 特性
 use serde_json::from_str; // 确保导入 from_str 函数
