@@ -188,7 +188,22 @@ impl VntsWebService {
         }
         Ok(wg_data)
     }
-    
+    pub async fn read_wg_config(&self)  {
+        match File::open("wg_cfg.json") {
+            Ok(mut file) => {
+                let mut content = String::new();
+                if let Err(e) = file.read_to_string(&mut content) {
+                    println!("读取文件失败: {}", e);
+                }
+                let wg_data: WGData = serde_json::from_str(&content).unwrap();
+                println!("read_wg_config: {:#?}", wg_data);
+            }
+            Err(e) => {
+                println!("打开文件失败: {}", e);
+            }
+        }
+    }
+        
     fn check_wg_config(config: &CreateWgConfig) -> anyhow::Result<([u8; 32], [u8; 32])> {
         match config.vnts_endpoint.to_socket_addrs() {
             Ok(mut addr) => {
