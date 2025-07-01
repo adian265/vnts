@@ -10,7 +10,6 @@ use std::io;
 use std::io::Write;
 use std::net::Ipv4Addr;
 use std::path::PathBuf;
-use crate::core::server::web::service::VntsWebService;
 
 
 use crate::cipher::RsaCipher;
@@ -328,7 +327,6 @@ async fn main() {
         config,
         rsa,
     )
-    service.read_wg_config().await;
     .await
     {
         log::error!("{:?}", e)

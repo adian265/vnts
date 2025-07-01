@@ -77,6 +77,7 @@ pub async fn start(
     config: ConfigInfo,
 ) -> std::io::Result<()> {
     let web_service = VntsWebService::new(cache, config);
+    web_service.read_wg_config().await;
     HttpServer::new(move || {
         let generated = generate();
         App::new()
