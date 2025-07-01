@@ -111,7 +111,7 @@ impl VntsWebService {
         //     Err(anyhow!("设备id不能为空"))?;
         // }
         let cache = &self.cache;
-        wg_group_map.iter().for_each(|entry| println!("{:?}", entry)); 
+        cache.wg_group_map.iter().for_each(|entry| println!("{:?}", entry)); 
         // for d in cache.wg_group_map.iter() {
         //     println!("{:#?}", d);
         // }
