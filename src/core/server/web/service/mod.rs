@@ -149,7 +149,25 @@ impl VntsWebService {
             secret_key,
             public_key,
         };
-        let cfg = wireguard_config;
+        let cfg = wireguard_config.clone();
+        cache.wg_group_map.insert(public_key, wireguard_config);
+        let config = WgConfig {
+            vnts_endpoint: wg_data.config.vnts_endpoint,
+            vnts_public_key: general_purpose::STANDARD.encode(&self.config.wg_public_key),
+            vnts_allowed_ips: network.to_string(),
+            public_key: general_purpose::STANDARD.encode(public_key),
+            private_key: general_purpose::STANDARD.encode(secret_key),
+            ip: response.virtual_ip,
+            prefix: network.prefix(),
+            persistent_keepalive: wg_data.config.persistent_keepalive,
+        };
+        let wg_data = WGData {
+            group_id,
+            virtual_ip: response.virtual_ip,
+            device_id,
+            name: wg_data.name,
+            config,
+        };
         println!("create_wg_config: {:#?}", cfg);
         // 将 wg_data 序列化为 JSON 并写入文件
         match to_string_pretty(&cfg) {
@@ -169,25 +187,6 @@ impl VntsWebService {
                 println!("序列化失败: {}", e);
             }
         }
-        cache.wg_group_map.insert(public_key, wireguard_config);
-        let config = WgConfig {
-            vnts_endpoint: wg_data.config.vnts_endpoint,
-            vnts_public_key: general_purpose::STANDARD.encode(&self.config.wg_public_key),
-            vnts_allowed_ips: network.to_string(),
-            public_key: general_purpose::STANDARD.encode(public_key),
-            private_key: general_purpose::STANDARD.encode(secret_key),
-            ip: response.virtual_ip,
-            prefix: network.prefix(),
-            persistent_keepalive: wg_data.config.persistent_keepalive,
-        };
-        let wg_data = WGData {
-            group_id,
-            virtual_ip: response.virtual_ip,
-            device_id,
-            name: wg_data.name,
-            config,
-        };
-        
         Ok(wg_data)
     }
         
