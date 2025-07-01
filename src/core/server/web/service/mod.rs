@@ -163,7 +163,7 @@ impl VntsWebService {
             config,
         };
         println!("create_wg_config: {:#?}", wg_data);
-        let f = "wg.json"
+        let f = "wg.json";
         write_wg_data_to_json(&self, &wg_data,&f).await?;
         Ok(wg_data)
     }
