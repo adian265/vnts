@@ -328,6 +328,7 @@ async fn main() {
         config,
         rsa,
     )
+    service.read_wg_config().await;
     .await
     {
         log::error!("{:?}", e)
