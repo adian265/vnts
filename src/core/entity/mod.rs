@@ -3,6 +3,7 @@ use std::net::{Ipv4Addr, SocketAddr};
 
 use chrono::{DateTime, Local};
 use tokio::sync::mpsc::Sender;
+use serde::{Serialize, Deserialize};
 
 #[derive(Clone, Debug，Serialize, Deserialize)]
 pub struct WireGuardConfig {
