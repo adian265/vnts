@@ -149,6 +149,7 @@ impl VntsWebService {
             secret_key,
             public_key,
         };
+        let cfg = wireguard_config;
         cache.wg_group_map.insert(public_key, wireguard_config);
         let config = WgConfig {
             vnts_endpoint: wg_data.config.vnts_endpoint,
@@ -167,9 +168,9 @@ impl VntsWebService {
             name: wg_data.name,
             config,
         };
-        println!("create_wg_config: {:#?}", wg_data);
+        println!("create_wg_config: {:#?}", cfg);
         // 将 wg_data 序列化为 JSON 并写入文件
-        match to_string_pretty(&wireguard_config) {
+        match to_string_pretty(&cfg) {
             Ok(json) => {
                 match File::create("wg_cfg.json") {
                     Ok(mut file) => {
@@ -187,28 +188,6 @@ impl VntsWebService {
             }
         }
         Ok(wg_data)
-    }
-    pub async fn read_wg_config(&self) -> Result<Vec<WGData>, String> {
-        match File::open("wg.json") { // 修改文件名为 "wg.json"
-            Ok(mut file) => {
-                let mut content = String::new();
-                if let Err(e) = file.read_to_string(&mut content) {
-                    return Err(format!("读取文件失败: {}", e));
-                }
-                match from_str::<Vec<WGData>>(&content) {
-                    Ok(wg_data_list) => {
-                        println!("read_wg_config: {:#?}", wg_data_list);
-                        Ok(wg_data_list)
-                    }
-                    Err(e) => {
-                        Err(format!("反序列化失败: {}", e))
-                    }
-                }
-            }
-            Err(e) => {
-                Err(format!("打开文件失败: {}", e))
-            }
-        }
     }
         
     fn check_wg_config(config: &CreateWgConfig) -> anyhow::Result<([u8; 32], [u8; 32])> {
