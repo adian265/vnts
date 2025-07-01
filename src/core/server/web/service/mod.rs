@@ -6,7 +6,7 @@ use std::time::{Duration, Instant};
 use serde::{Serialize, Deserialize};
 use std::fs::File;
 use std::io::{Write,Read};
-use serde_json::to_string_pretty;
+use serde_json::{to_string_pretty, from_str};
 
 use anyhow::{anyhow, Context};
 use base64::engine::general_purpose;
