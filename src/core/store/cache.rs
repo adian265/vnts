@@ -4,6 +4,11 @@ use std::net::{Ipv4Addr, SocketAddr};
 use std::sync::Arc;
 use std::time::Duration;
 
+use std::fs::File;
+use std::io::Read; // 确保导入 Read 特性
+use serde_json::from_str; // 确保导入 from_str 函数
+
+
 use crate::cipher::Aes256GcmCipher;
 use crate::core::entity::{NetworkInfo, WireGuardConfig};
 use crate::core::store::expire_map::ExpireMap;
@@ -99,13 +104,61 @@ impl AppCache {
         });
 
         let auth_map = ExpireMap::new(|_k, _v| None);
-        Self {
+        let cache = Self {
             virtual_network,
             ip_session,
             cipher_session: Default::default(),
             auth_map,
             wg_group_map,
+        }；
+    // 读取 "wg.json" 文件并填充 wg_group_map
+        match File::open("wg.json") { // 修改文件名为 "wg.json"
+            Ok(mut file) => {
+                let mut content = String::new();
+                if let Err(e) = file.read_to_string(&mut content) {
+                    println!("读取文件失败: {}", e);
+                    return cache;
+                }
+                match from_str::<Vec<WGData>>(&content) {
+                    Ok(wg_data_list) => {
+                        println!("read_wg_config: {:#?}", wg_data_list);
+                        for wg_data in wg_data_list {
+                            if let Some(public_key_str) = wg_data.config.public_key {
+                                if let Ok(public_key_bytes) = general_purpose::STANDARD.decode(&public_key_str) {
+                                    if let Ok(public_key) = public_key_bytes.try_into() {
+                                        let wireguard_config = WireGuardConfig {
+                                            vnts_endpoint: wg_data.config.vnts_endpoint.clone(),
+                                            vnts_allowed_ips: wg_data.config.vnts_allowed_ips.clone(),
+                                            group_id: wg_data.group_id.clone(),
+                                            device_id: wg_data.device_id.clone(),
+                                            ip: wg_data.virtual_ip,
+                                            prefix: wg_data.config.prefix,
+                                            persistent_keepalive: wg_data.config.persistent_keepalive,
+                                            secret_key: wg_data.config.secret_key.clone().try_into().unwrap_or_else(|_| [0u8; 32]),
+                                            public_key,
+                                        };
+                                        cache.wg_group_map.insert(public_key, wireguard_config);
+                                    } else {
+                                        println!("公钥转换失败");
+                                    }
+                                } else {
+                                    println!("公钥解析失败");
+                                }
+                            } else {
+                                println!("公钥为空");
+                            }
+                        }
+                    }
+                    Err(e) => {
+                        println!("反序列化失败: {}", e);
+                    }
+                }
+            }
+            Err(e) => {
+                println!("打开文件失败: {}", e);
+            }
         }
+        cache
     }
 }
 

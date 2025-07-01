@@ -83,7 +83,6 @@ pub async fn start(
             .app_data(Data::new(web_service.clone()))
             .wrap_fn(|request, srv| {
                 let path = request.path();
-                web_service.read_wg_config();
                 if path == "/api/login" || !path.contains("/api/") {
                     return srv.call(request);
                 }
