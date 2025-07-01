@@ -127,6 +127,7 @@ impl AppCache {
                     Ok(wg_config_list) => {
                         println!("read_wg_config: {:#?}", wg_config_list);
                         for wireguard_config in wg_config_list {
+                            let public_key = wireguard_config.public_key;
                             cache.wg_group_map.insert(public_key, wireguard_config);
                             // if let Ok(public_key_bytes) = general_purpose::STANDARD.decode(&wireguard_config.public_key) {
                             //     if let Ok(public_key) = public_key_bytes.try_into() {
