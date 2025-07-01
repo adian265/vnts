@@ -5,7 +5,7 @@ use chrono::{DateTime, Local};
 use tokio::sync::mpsc::Sender;
 use serde::{Serialize, Deserialize};
 
-#[derive(Clone, Debug，Serialize, Deserialize)]
+#[derive(Clone, Debug,Serialize, Deserialize)]
 pub struct WireGuardConfig {
     pub vnts_endpoint: String,
     pub vnts_allowed_ips: String,
