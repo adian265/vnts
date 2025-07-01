@@ -8,7 +8,8 @@ use serde::{Serialize, Deserialize};
 use std::fs::File;
 use std::io::Read; // 确保导入 Read 特性
 use serde_json::from_str; // 确保导入 from_str 函数
-
+use base64::engine::general_purpose;
+use base64::Engine;
 
 use crate::cipher::Aes256GcmCipher;
 use crate::core::entity::{NetworkInfo, WireGuardConfig};
