@@ -4,7 +4,7 @@ use std::net::{Ipv4Addr, SocketAddr};
 use chrono::{DateTime, Local};
 use tokio::sync::mpsc::Sender;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug，Serialize, Deserialize)]
 pub struct WireGuardConfig {
     pub vnts_endpoint: String,
     pub vnts_allowed_ips: String,
