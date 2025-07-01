@@ -163,41 +163,27 @@ impl VntsWebService {
             config,
         };
         println!("create_wg_config: {:#?}", wg_data);
-        let f = "wg.json";
-        match serde_json::to_string_pretty(wg_data) {
+        // 将 wg_data 序列化为 JSON 并写入文件
+        match to_string_pretty(&wg_data) {
             Ok(json) => {
-                match std::fs::write(f, json) {
-                    Ok(_) => Ok(()),
-                    Err(e) => Err(format!("写入JSON文件失败: {}", e)),
+                match File::create("wg_cfg.json") {
+                    Ok(mut file) => {
+                        if let Err(e) = file.write_all(json.as_bytes()) {
+                            println!("写入文件失败: {}", e);
+                        }
+                    }
+                    Err(e) => {
+                        println!("创建文件失败: {}", e);
+                    }
                 }
             }
-            Err(e) => Err(format!("序列化失败: {}", e)),
+            Err(e) => {
+                println!("序列化失败: {}", e);
+            }
         }
         Ok(wg_data)
     }
-     pub async fn write_wg_data_to_json(&self, wg_data: &WGData, path: &str) -> Result<(), String> {
-        match serde_json::to_string_pretty(wg_data) {
-            Ok(json) => {
-                match std::fs::write(path, json) {
-                    Ok(_) => Ok(()),
-                    Err(e) => Err(format!("写入JSON文件失败: {}", e)),
-                }
-            }
-            Err(e) => Err(format!("序列化失败: {}", e)),
-        }
-    }
-
-    pub async fn read_wg_data_from_json(path: &str) -> Result<WGData, String> {
-        match std::fs::read_to_string(path) {
-            Ok(json_content) => {
-                match serde_json::from_str(&json_content) {
-                    Ok(wg_data) => Ok(wg_data),
-                    Err(e) => Err(format!("反序列化失败: {}", e)),
-                }
-            }
-            Err(e) => Err(format!("读取JSON文件失败: {}", e)),
-        }
-    }
+    
     fn check_wg_config(config: &CreateWgConfig) -> anyhow::Result<([u8; 32], [u8; 32])> {
         match config.vnts_endpoint.to_socket_addrs() {
             Ok(mut addr) => {
