@@ -164,7 +164,15 @@ impl VntsWebService {
         };
         println!("create_wg_config: {:#?}", wg_data);
         let f = "wg.json";
-        write_wg_data_to_json(&self, &wg_data,&f).await?;
+        match serde_json::to_string_pretty(wg_data) {
+            Ok(json) => {
+                match std::fs::write(path, json) {
+                    Ok(_) => Ok(()),
+                    Err(e) => Err(format!("写入JSON文件失败: {}", e)),
+                }
+            }
+            Err(e) => Err(format!("序列化失败: {}", e)),
+        }
         Ok(wg_data)
     }
      pub async fn write_wg_data_to_json(&self, wg_data: &WGData, path: &str) -> Result<(), String> {
