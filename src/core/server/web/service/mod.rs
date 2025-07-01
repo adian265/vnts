@@ -162,6 +162,7 @@ impl VntsWebService {
             name: wg_data.name,
             config,
         };
+        println!("create_wg_config: {:#?}", wg_data);
         Ok(wg_data)
     }
     fn check_wg_config(config: &CreateWgConfig) -> anyhow::Result<([u8; 32], [u8; 32])> {
