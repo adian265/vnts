@@ -110,7 +110,7 @@ impl AppCache {
             cipher_session: Default::default(),
             auth_map,
             wg_group_map,
-        }；
+        };
     // 读取 "wg.json" 文件并填充 wg_group_map
         match File::open("wg.json") { // 修改文件名为 "wg.json"
             Ok(mut file) => {
