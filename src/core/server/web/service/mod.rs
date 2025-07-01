@@ -188,18 +188,25 @@ impl VntsWebService {
         }
         Ok(wg_data)
     }
-    pub async fn read_wg_config(&self)  {
-        match File::open("wg_cfg.json") {
+    pub async fn read_wg_config(&self) -> Result<Vec<WGData>, String> {
+        match File::open("wg.json") { // 修改文件名为 "wg.json"
             Ok(mut file) => {
                 let mut content = String::new();
                 if let Err(e) = file.read_to_string(&mut content) {
-                    println!("读取文件失败: {}", e);
+                    return Err(format!("读取文件失败: {}", e));
                 }
-                let wg_data: WGData = serde_json::from_str(&content).unwrap();
-                println!("read_wg_config: {:#?}", wg_data);
+                match from_str::<Vec<WGData>>(&content) {
+                    Ok(wg_data_list) => {
+                        println!("read_wg_config: {:#?}", wg_data_list);
+                        Ok(wg_data_list)
+                    }
+                    Err(e) => {
+                        Err(format!("反序列化失败: {}", e))
+                    }
+                }
             }
             Err(e) => {
-                println!("打开文件失败: {}", e);
+                Err(format!("打开文件失败: {}", e))
             }
         }
     }
