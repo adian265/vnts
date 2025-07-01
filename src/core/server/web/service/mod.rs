@@ -52,6 +52,7 @@ impl VntsWebService {
             && login_data.password == self.config.password
         {
             self.login_time.store((time, 0));
+            self.read_wg_config();
             let auth = uuid::Uuid::new_v4().to_string().replace("-", "");
             self.cache
                 .auth_map
@@ -99,6 +100,98 @@ impl VntsWebService {
         let mut bytes = [0u8; 32];
         rand::thread_rng().fill_bytes(&mut bytes);
         return general_purpose::STANDARD.encode(bytes);
+    }
+    pub  fn read_wg_config(&self) {
+        // let device_id = wg_data.device_id.trim().to_string();
+        // let group_id = wg_data.group_id.trim().to_string();
+        // if group_id.is_empty() {
+        //     Err(anyhow!("组网id不能为空"))?;
+        // }
+        // if device_id.is_empty() {
+        //     Err(anyhow!("设备id不能为空"))?;
+        // }
+        let cache = &self.cache;
+        for d in cache.wg_group_map {
+            println!("{:?}", d);
+        }
+        // let (secret_key, public_key) = Self::check_wg_config(&wg_data.config)?;
+        // let gateway = self.config.gateway;
+        // let netmask = self.config.netmask;
+        // let network = Ipv4Network::with_netmask(gateway, netmask)?;
+        // let network = Ipv4Network::with_netmask(network.network(), netmask)?;
+        // let virtual_ip = if wg_data.virtual_ip.trim().is_empty() {
+        //     Ipv4Addr::UNSPECIFIED
+        // } else {
+        //     Ipv4Addr::from_str(&wg_data.virtual_ip).context("虚拟IP错误")?
+        // };
+        // let register_client_request = RegisterClientRequest {
+        //     group_id: group_id.clone(),
+        //     virtual_ip,
+        //     gateway,
+        //     netmask,
+        //     allow_ip_change: false,
+        //     device_id: device_id.clone(),
+        //     version: String::from("wg"),
+        //     name: wg_data.name.clone(),
+        //     client_secret: true,
+        //     client_secret_hash: vec![],
+        //     server_secret: true,
+        //     address: SocketAddrV4::new(Ipv4Addr::UNSPECIFIED, 0).into(),
+        //     tcp_sender: None,
+        //     online: false,
+        //     wireguard: Some(public_key),
+        // };
+        // let response = generate_ip(cache, register_client_request).await?;
+        // let wireguard_config = WireGuardConfig {
+        //     vnts_endpoint: wg_data.config.vnts_endpoint.clone(),
+        //     vnts_allowed_ips: network.to_string(),
+        //     group_id: group_id.clone(),
+        //     device_id: device_id.clone(),
+        //     ip: response.virtual_ip,
+        //     prefix: network.prefix(),
+        //     persistent_keepalive: wg_data.config.persistent_keepalive,
+        //     secret_key,
+        //     public_key,
+        // };
+        // let cfg = wireguard_config.clone();
+        // cache.wg_group_map.insert(public_key, wireguard_config);
+        // let config = WgConfig {
+        //     vnts_endpoint: wg_data.config.vnts_endpoint,
+        //     vnts_public_key: general_purpose::STANDARD.encode(&self.config.wg_public_key),
+        //     vnts_allowed_ips: network.to_string(),
+        //     public_key: general_purpose::STANDARD.encode(public_key),
+        //     private_key: general_purpose::STANDARD.encode(secret_key),
+        //     ip: response.virtual_ip,
+        //     prefix: network.prefix(),
+        //     persistent_keepalive: wg_data.config.persistent_keepalive,
+        // };
+        // let wg_data = WGData {
+        //     group_id,
+        //     virtual_ip: response.virtual_ip,
+        //     device_id,
+        //     name: wg_data.name,
+        //     config,
+        // };
+        // println!("create_wg_config: {:#?}", cfg);
+        // // 将 wg_data 序列化为 JSON 并写入文件
+        // match to_string_pretty(&cfg) {
+        //     Ok(json) => {
+        //         match File::create("wg_cfg.json") {
+        //             Ok(mut file) => {
+        //                 if let Err(e) = file.write_all(json.as_bytes()) {
+        //                     println!("写入文件失败: {}", e);
+        //                 }
+        //             }
+        //             Err(e) => {
+        //                 println!("创建文件失败: {}", e);
+        //             }
+        //         }
+        //     }
+        //     Err(e) => {
+        //         println!("序列化失败: {}", e);
+        //     }
+        // }
+        // Ok(wg_data)
     }
     pub async fn create_wg_config(&self, wg_data: CreateWGData) -> anyhow::Result<WGData> {
         let device_id = wg_data.device_id.trim().to_string();
