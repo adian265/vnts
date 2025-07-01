@@ -5,7 +5,7 @@ use std::time::{Duration, Instant};
 
 use serde::{Serialize, Deserialize};
 use std::fs::File;
-use std::io::Write;
+use std::io::{Write,Read};
 use serde_json::to_string_pretty;
 
 use anyhow::{anyhow, Context};
