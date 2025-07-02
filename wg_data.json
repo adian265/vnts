@@ -1,0 +1,16 @@
+{
+  "group_id": "awe",
+  "virtual_ip": "10.26.0.2",
+  "device_id": "wg1751429684421",
+  "name": "WireGuard",
+  "config": {
+    "vnts_endpoint": "192.168.1.2:29872",
+    "vnts_public_key": "nhI0Nz5gsfnEE7U4JCIcveUUit9M+Sm7mzc/ghtfqk0=",
+    "vnts_allowed_ips": "10.26.0.0/24",
+    "public_key": "p4QK6Q0XhBE9Ig/L9XaA8wWTzjCBQ75HwVicTEOSVSA=",
+    "private_key": "/a2k0n3aNuFr2w7pLE1/SRkLE1nQx+n8R4488NHYo60=",
+    "ip": "10.26.0.2",
+    "prefix": 24,
+    "persistent_keepalive": 10
+  }
+}

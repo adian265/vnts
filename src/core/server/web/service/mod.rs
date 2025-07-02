@@ -21,7 +21,7 @@ use crate::core::server::web::vo::req::{CreateWGData, CreateWgConfig, LoginData,
 use crate::core::server::web::vo::res::{
     ClientInfo, ClientStatusInfo, GroupList, NetworkInfo, WGData, WgConfig,
 };
-use crate::core::service::server::{generate_ip, RegisterClientRequest};
+use crate::core::service::server::{generate_ip, RegisterClientRequest,RegisterClientResponse};
 use crate::core::store::cache::AppCache;
 use crate::ConfigInfo;
 
@@ -273,7 +273,7 @@ impl VntsWebService {
             name: wg_data.name,
             config,
         };
-        println!("create_wg_config: {:#?}", cfg);
+        // println!("create_wg_config: {:#?}", cfg);
         // 将 wg_data 序列化为 JSON 并写入文件
         match to_string_pretty(&cfg) {
             Ok(json) => {
@@ -292,6 +292,23 @@ impl VntsWebService {
                 println!("序列化失败: {}", e);
             }
         }
+        // match to_string_pretty(&response) {
+        //     Ok(json) => {
+        //         match File::create("wg_res.json") {
+        //             Ok(mut file) => {
+        //                 if let Err(e) = file.write_all(json.as_bytes()) {
+        //                     println!("写入文件失败: {}", e);
+        //                 }
+        //             }
+        //             Err(e) => {
+        //                 println!("创建文件失败: {}", e);
+        //             }
+        //         }
+        //     }
+        //     Err(e) => {
+        //         println!("序列化失败: {}", e);
+        //     }
+        // }
         match to_string_pretty(&wg_data) {
             Ok(json) => {
                 match File::create("wg_data.json") {

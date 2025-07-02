@@ -654,7 +654,7 @@ pub struct RegisterClientRequest {
     // wireguard客户端公钥
     pub wireguard: Option<[u8; 32]>,
 }
-
+#[derive(Debug)]
 pub struct RegisterClientResponse {
     timestamp: i64,
     pub virtual_ip: Ipv4Addr,
@@ -769,9 +769,13 @@ pub async fn generate_ip(
         epoch: lock.epoch,
         client_list: clients_info(&lock.clients, virtual_ip),
     };
+    println!("{:?}", response);
+    println!("{:?}", response.client_list.);
+
     Ok(response)
 }
 fn clients_info(clients: &HashMap<u32, ClientInfo>, current_ip: u32) -> Vec<SimpleClientInfo> {
+    println!("c: {:?}", clients);
     clients
         .iter()
         .filter(|&(_, dev)| dev.virtual_ip != current_ip)

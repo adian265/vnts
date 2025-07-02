@@ -15,7 +15,7 @@ use crate::cipher::Aes256GcmCipher;
 use crate::core::entity::{NetworkInfo, WireGuardConfig};
 use crate::core::store::expire_map::ExpireMap;
 
-#[derive(Clone,Debug)]
+#[derive(Clone)]
 pub struct AppCache {
     // group -> NetworkInfo
     pub virtual_network: ExpireMap<String, Arc<RwLock<NetworkInfo>>>,
@@ -114,10 +114,9 @@ impl AppCache {
             wg_group_map,
         };
     // 读取 "wg.json" 文件并填充 wg_group_map
-        match File::open("wg.json") { // 修改文件名为 "wg.json"
+        match File::open("wg_cfg.json") { // 修改文件名为 "wg_cfg.json"
             Ok(mut file) => {
                 let mut content = String::new();
-                println!("cache:{:#?}",cache);
                 if let Err(e) = file.read_to_string(&mut content) {
                     println!("读取文件失败: {}", e);
                     return cache;
@@ -126,7 +125,7 @@ impl AppCache {
                 }
                 match from_str::<Vec<WireGuardConfig>>(&content) {
                     Ok(wg_config_list) => {
-                        println!("read_wg_config: {:#?}", wg_config_list);
+                        // println!("read_wg_config: {:#?}", wg_config_list);
                         for wireguard_config in wg_config_list {
                             let public_key = wireguard_config.public_key;
                             cache.wg_group_map.insert(public_key, wireguard_config);
@@ -150,7 +149,41 @@ impl AppCache {
                 println!("打开文件失败: {}", e);
             }
         }
-
+        // match File::open("wg_client.json") { // 修改文件名为 "wg.json"
+        //     Ok(mut file) => {
+        //         let mut content = String::new();
+        //         if let Err(e) = file.read_to_string(&mut content) {
+        //             println!("读取文件失败: {}", e);
+        //             return cache;
+        //         }else {
+        //             println!("读取文件成功: {}", content);
+        //         }
+        //         match from_str::<Vec<NetworkInfo>>(&content) {
+        //             Ok(wg_config_list) => {
+        //                 // println!("read_wg_config: {:#?}", wg_config_list);
+        //                 for wireguard_config in wg_config_list {
+        //                     let public_key = wireguard_config.public_key;
+        //                     cache.wg_group_map.insert(public_key, wireguard_config);
+        //                     // if let Ok(public_key_bytes) = general_purpose::STANDARD.decode(&wireguard_config.public_key) {
+        //                     //     if let Ok(public_key) = public_key_bytes.try_into() {
+        //                     //         cache.wg_group_map.insert(public_key, wireguard_config);
+        //                     //     } else {
+        //                     //         println!("公钥转换失败");
+        //                     //     }
+        //                     // } else {
+        //                     //     println!("公钥解析失败");
+        //                     // }
+        //                 }
+        //             }
+        //             Err(e) => {
+        //                 println!("反序列化失败: {}", e);
+        //             }
+        //         }
+        //     }
+        //     Err(e) => {
+        //         println!("打开文件失败: {}", e);
+        //     }
+        // }
         cache
     }
 }
