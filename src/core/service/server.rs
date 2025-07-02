@@ -11,6 +11,9 @@ use std::time::Duration;
 use std::{io, result};
 use tokio::net::UdpSocket;
 use tokio::sync::mpsc::Sender;
+use serde_json::{to_string_pretty, from_str};
+use std::fs::File;
+use std::io::{Write,Read};
 
 use crate::cipher::{Aes256GcmCipher, Finger, RsaCipher};
 use crate::core::entity::{ClientInfo, ClientStatusInfo, NetworkInfo, SimpleClientInfo};
@@ -522,6 +525,7 @@ impl ServerPacketHandler {
         context: &LinkVntContext,
     ) -> Result<Option<NetPacket<Vec<u8>>>> {
         let guard = context.network_info.read();
+        println!("poll_device_list");
         let ips = clients_info(&guard.clients, context.virtual_ip);
         let epoch = guard.epoch;
         drop(guard);
@@ -662,7 +666,121 @@ pub struct RegisterClientResponse {
     pub epoch: u64,
     pub client_list: Vec<SimpleClientInfo>,
 }
+pub async fn set_ip(
+    cache: &AppCache,
+    register_request: RegisterClientRequest,
+) -> anyhow::Result<RegisterClientResponse> {
+    let gateway: u32 = register_request.gateway.into();
+    let netmask: u32 = register_request.netmask.into();
+    let network: u32 = gateway & netmask;
+    let mut virtual_ip: u32 = register_request.virtual_ip.into();
+    let device_id = register_request.device_id;
+    let allow_ip_change = register_request.allow_ip_change;
+    let group_id = register_request.group_id;
+    let v = cache
+        .virtual_network
+        .optionally_get_with(group_id, || {
+            (
+                Duration::from_secs(7 * 24 * 3600),
+                Arc::new(parking_lot::const_rwlock(NetworkInfo::new(
+                    network, netmask, gateway,
+                ))),
+            )
+        })
+        .await;
+    // 可分配的ip段
+    let ip_range = network + 1..gateway | (!netmask);
+    let timestamp = Local::now().timestamp();
+    let mut lock = v.write();
+    let mut insert = true;
+    if virtual_ip != 0 {
+        if gateway == virtual_ip || !ip_range.contains(&virtual_ip) {
+            Err(Error::InvalidIp)?
+        }
+        //指定了ip
+        if let Some(info) = lock.clients.get_mut(&virtual_ip) {
+            if info.device_id != device_id {
+                //ip被占用了,并且不能更改ip
+                if !allow_ip_change {
+                    println!("ip被占用了,并且不能更改ip");
+                    Err(Error::IpAlreadyExists)?
+                }
+                // 重新挑选ip
+                println!("重新挑选ip");
+                virtual_ip = 0;
+            } else {
+                insert = false;
+            }
+        }
+    }
+    let mut old_ip = 0;
+    if insert {
+        // 找到上一次用的ip
+        for (ip, x) in &lock.clients {
+            if x.device_id == device_id {
+                if virtual_ip == 0 {
+                    virtual_ip = *ip;
+                } else {
+                    old_ip = *ip;
+                    println!("找到上一次用的ip");
+                }
+                break;
+            }
+        }
+    }
 
+    if virtual_ip == 0 {
+        // 从小到大找一个未使用的ip
+        println!("从小到大找一个未使用的ip");
+        for ip in ip_range {
+            if ip == lock.gateway_ip {
+                continue;
+            }
+            if !lock.clients.contains_key(&ip) {
+                virtual_ip = ip;
+                break;
+            }
+        }
+    }
+    if virtual_ip == 0 {
+        log::error!("地址使用完:{:?}", lock);
+        Err(Error::AddressExhausted)?
+    }
+    let info = if old_ip == 0 {
+        lock.clients
+            .entry(virtual_ip)
+            .or_insert_with(ClientInfo::default)
+    } else {
+        let client_info = lock.clients.remove(&old_ip).unwrap();
+        lock.clients
+            .entry(virtual_ip)
+            .or_insert_with(|| client_info)
+    };
+    info.name = register_request.name;
+    info.device_id = device_id;
+    info.version = register_request.version;
+    info.client_secret = register_request.client_secret;
+    info.client_secret_hash = register_request.client_secret_hash;
+    info.server_secret = register_request.server_secret;
+    info.address = register_request.address;
+    info.online = register_request.online;
+    info.wireguard = register_request.wireguard;
+    info.virtual_ip = virtual_ip;
+    info.tcp_sender = register_request.tcp_sender;
+    info.last_join_time = Local::now();
+    info.timestamp = timestamp;
+    lock.epoch += 1;
+    let response = RegisterClientResponse {
+        timestamp,
+        virtual_ip: virtual_ip.into(),
+        epoch: lock.epoch,
+        client_list: clients_info(&lock.clients, virtual_ip),
+    };
+    println!("{:?}", response);
+    // println!("{:?}", response.client_list);
+
+    Ok(response)
+}
 pub async fn generate_ip(
     cache: &AppCache,
     register_request: RegisterClientRequest,
@@ -769,14 +887,77 @@ pub async fn generate_ip(
         epoch: lock.epoch,
         client_list: clients_info(&lock.clients, virtual_ip),
     };
-    println!("{:?}", response);
-    println!("{:?}", response.client_list.);
+    // println!("{:?}", response);
+    // println!("{:?}", response.client_list);
 
     Ok(response)
 }
 fn clients_info(clients: &HashMap<u32, ClientInfo>, current_ip: u32) -> Vec<SimpleClientInfo> {
-    println!("c: {:?}", clients);
+    // println!("c: {:?}", clients);
+    // let mut cl = clients.clone();
+    // let mut new_cl = HashMap::<u32, ClientInfo>::new();
+    // let mut res = clients.clone();
+
+     // 读取 "wg.json" 文件并填充 wg_group_map
+    // match File::open("wg_client_arr.json") { // 修改文件名为 "wg_cfg.json"
+    //     Ok(mut file) => {
+    //         let mut content = String::new();
+    //         if let Err(e) = file.read_to_string(&mut content) {
+    //             println!("读取文件失败: {}", e);
+    //         }else {
+    //             println!("读取文件成功: {}", content);
+    //             match from_str::<Vec<ClientInfo>>(&content) {
+    //                 Ok(c_list) => {
+    //                     println!("c_list: {:#?}", c_list);
+    //                     for r in c_list {
+    //                         new_cl.insert(r.virtual_ip, r.clone());
+    //                     }
+    //                 }
+    //                 Err(e) => {
+    //                     println!("反序列化失败: {}", e);
+    //                 }
+    //             }
+    //         }
+    //     }
+    //     Err(e) => {
+    //         println!("打开文件失败: {}", e);
+    //     }
+    // }
+    
+    // for d in cl.values_mut() {
+    //     let mut is_find = false ;
+    //     if d.version == "wg" {
+    //         for n in new_cl.values_mut() {
+    //             if n.virtual_ip == d.virtual_ip {
+    //                 is_find = true;
+    //                 break;
+    //             }
+    //         }
+    //         if !is_find {
+    //             new_cl.insert(d.virtual_ip, d.clone());
+    //             res.insert(d.virtual_ip, d.clone());
+    //         }
+    //     }
+    // }
+    // match to_string_pretty(&new_cl) {
+    //     Ok(json) => {
+    //         match File::create("wg_res.json") {
+    //             Ok(mut file) => {
+    //                 if let Err(e) = file.write_all(json.as_bytes()) {
+    //                     println!("写入文件失败: {}", e);
+    //                 }
+    //             }
+    //             Err(e) => {
+    //                 println!("创建文件失败: {}", e);
+    //             }
+    //         }
+    //     }
+    //     Err(e) => {
+    //         println!("序列化失败: {}", e);
+    //     }
+    // }
     clients
+    // res
         .iter()
         .filter(|&(_, dev)| dev.virtual_ip != current_ip)
         .map(|(_, device_info)| device_info.into())

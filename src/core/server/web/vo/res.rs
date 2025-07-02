@@ -4,7 +4,7 @@ use base64::Engine;
 use serde::{Deserialize, Serialize};
 use std::net::{Ipv4Addr, SocketAddr};
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize,Clone)]
 pub struct WGData {
     pub group_id: String,
     pub virtual_ip: Ipv4Addr,
@@ -12,7 +12,7 @@ pub struct WGData {
     pub name: String,
     pub config: WgConfig,
 }
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize,Clone)]
 pub struct WgConfig {
     pub vnts_endpoint: String,
     pub vnts_public_key: String,

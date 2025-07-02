@@ -21,7 +21,7 @@ use crate::core::server::web::vo::req::{CreateWGData, CreateWgConfig, LoginData,
 use crate::core::server::web::vo::res::{
     ClientInfo, ClientStatusInfo, GroupList, NetworkInfo, WGData, WgConfig,
 };
-use crate::core::service::server::{generate_ip, RegisterClientRequest,RegisterClientResponse};
+use crate::core::service::server::{generate_ip,set_ip, RegisterClientRequest,RegisterClientResponse};
 use crate::core::store::cache::AppCache;
 use crate::ConfigInfo;
 
@@ -33,7 +33,8 @@ pub struct VntsWebService {
 }
 
 impl VntsWebService {
-    pub fn new(cache: AppCache, config: ConfigInfo) -> Self {
+    pub async fn new(cache: AppCache, config: ConfigInfo) -> Self {
+        VntsWebService::read_wg_config(&cache, config.clone()).await;
         Self {
             cache,
             config,
@@ -52,7 +53,6 @@ impl VntsWebService {
             && login_data.password == self.config.password
         {
             self.login_time.store((time, 0));
-            self.read_wg_config();
             let auth = uuid::Uuid::new_v4().to_string().replace("-", "");
             self.cache
                 .auth_map
@@ -70,6 +70,15 @@ impl VntsWebService {
     pub fn group_list(&self) -> GroupList {
         let group_list: Vec<String> = self
             .cache
+            .virtual_network
+            .key_values()
+            .into_iter()
+            .map(|(key, _)| key)
+            .collect();
+        GroupList { group_list }
+    }
+    pub fn r_group_list(cache: AppCache) -> GroupList {
+        let group_list: Vec<String> = cache
             .virtual_network
             .key_values()
             .into_iter()
@@ -101,16 +110,125 @@ impl VntsWebService {
         rand::thread_rng().fill_bytes(&mut bytes);
         return general_purpose::STANDARD.encode(bytes);
     }
-    pub  fn read_wg_config(&self) {
-        let cache = &self.cache;
-        // cache.wg_group_map.iter().for_each(|entry| println!("{:?}", entry)); 
-        for d in cache.wg_group_map.iter() {
+    pub async fn read_wg_config(cache: &AppCache, config: ConfigInfo)  {
+        // 读取 "wg.json" 文件并填充 wg_group_map
+        // let mut cache = cache.clone();
+        let mut wg_data_list = Vec::new();
+        let mut wg_config_list = Vec::new();
+        // 读取 "wg.json" 文件并填充 wg_group_map
+        match File::open("wg_cfg_arr.json") { // 修改文件名为 "wg_cfg.json"
+            Ok(mut file) => {
+                let mut content = String::new();
+                if let Err(e) = file.read_to_string(&mut content) {
+                    println!("读取文件失败: {}", e);
+                }else {
+                    println!("读取文件成功,wg_cfg_arr.json");
+                }
+                match from_str::<Vec<WireGuardConfig>>(&content) {
+                    Ok(wc_list) => {
+                        wg_config_list = wc_list;
+                        // println!("read_wg_config: {:#?}", wg_config_list);
+                        // for wireguard_config in wg_config_list {
+                        //     let public_key = wireguard_config.public_key;
+                        //     cache.wg_group_map.insert(public_key, wireguard_config);
+                        //     // if let Ok(public_key_bytes) = general_purpose::STANDARD.decode(&wireguard_config.public_key) {
+                        //     //     if let Ok(public_key) = public_key_bytes.try_into() {
+                        //     //         cache.wg_group_map.insert(public_key, wireguard_config);
+                        //     //     } else {
+                        //     //         println!("公钥转换失败");
+                        //     //     }
+                        //     // } else {
+                        //     //     println!("公钥解析失败");
+                        //     // }
+                        // }
+                    }
+                    Err(e) => {
+                        println!("反序列化失败: {}", e);
+                    }
+                }
+            }
+            Err(e) => {
+                println!("打开文件失败: {}", e);
+            }
+        }
+        match File::open("wg_data_arr.json") { // 修改文件名为 "wg_cfg.json"
+            Ok(mut file) => {
+                let mut content = String::new();
+                if let Err(e) = file.read_to_string(&mut content) {
+                    println!("读取文件失败: {}", e);
+                }else {
+                    println!("读取文件成功,wg_data_arr.json");
+                    match from_str::<Vec<WGData>>(&content){
+                        Ok(w_dat) => {
+                            // println!("wg_data_list: {:#?}", w_dat);
+                            wg_data_list = w_dat;
+                        }
+                        Err(e) => {
+                            println!("反序列化失败: {}", e);
+                        }
+                    }
+                }
+                
+            }
+            Err(e) => {
+                println!("打开文件失败: {}", e);
+            }
+        }
+        let mut idx = 0;
+        for d in wg_config_list {
+            let mut wg_data = wg_data_list[idx].clone();
             let device_id = d.device_id.clone();
             let group_id = d.group_id.clone();
-            // let secret_key = d.secret_key.clone();
-            // let public_key = d.public_key.clone();
-            // let gateway = self.config.gateway;
-            // let netmask = self.config.netmask;
+            let secret_key = d.secret_key.clone();
+            let public_key = d.public_key.clone();
+            let gateway = config.gateway;
+            let netmask = config.netmask;
+            println!("device_id: {:#?}", device_id);
+            // println!("group_id: {:#?}", group_id);
+            // println!("secret_key: {:#?}", secret_key);
+            // println!("public_key: {:#?}", public_key);
+            // println!("gateway: {:#?}", gateway);
+            // println!("netmask: {:#?}", netmask);
+            // println!("\n\n");
+            // let network = Ipv4Network::with_netmask(gateway, netmask);
+            // let network = Ipv4Network::with_netmask(network.network(), netmask);
+            let virtual_ip = wg_data.virtual_ip;
+            let register_client_request = RegisterClientRequest {
+                group_id: group_id.clone(),
+                virtual_ip,
+                gateway,
+                netmask,
+                allow_ip_change: false,
+                device_id: device_id.clone(),
+                version: String::from("wg"),
+                name: wg_data.name.clone(),
+                client_secret: true,
+                client_secret_hash: vec![],
+                server_secret: true,
+                address: SocketAddrV4::new(Ipv4Addr::UNSPECIFIED, 0).into(),
+                tcp_sender: None,
+                online: false,
+                wireguard: Some(public_key),
+                // wireguard: general_purpose::STANDARD.decode(wg_data.config.public_key),
+
+            };
+            let response = set_ip(cache, register_client_request).await;
+            cache.wg_group_map.insert(public_key, d);
+            let config = WgConfig {
+                vnts_endpoint: wg_data.config.vnts_endpoint,
+                vnts_public_key: wg_data.config.vnts_public_key,
+                vnts_allowed_ips: wg_data.config.vnts_allowed_ips,
+                public_key: wg_data.config.public_key,
+                private_key: wg_data.config.private_key,
+                ip: wg_data.virtual_ip,
+                prefix: wg_data.config.prefix,
+                persistent_keepalive: wg_data.config.persistent_keepalive,
+            };
+            println!("WgConfig: {:#?}", config);
+            let g_list = VntsWebService::r_group_list(cache.clone());
+            println!("g_list: {:#?}", g_list);
+            idx += 1;
+            println!("idx: {:#?}", idx);
             // let network = Ipv4Network::with_netmask(gateway, netmask)?;
             // let network = Ipv4Network::with_netmask(network.network(), netmask)?;
             // let virtual_ip = if wg_data.virtual_ip.trim().is_empty() {
@@ -136,6 +254,7 @@ impl VntsWebService {
             //     config,
             // };
         }
+        
         // let register_client_request = RegisterClientRequest {
         //     group_id: group_id.clone(),
         //     virtual_ip,
@@ -216,6 +335,8 @@ impl VntsWebService {
         }
         let cache = &self.cache;
         let (secret_key, public_key) = Self::check_wg_config(&wg_data.config)?;
+        println!("secret_key: {:#?}", secret_key);
+        println!("public_key: {:#?}", public_key);
         let gateway = self.config.gateway;
         let netmask = self.config.netmask;
         let network = Ipv4Network::with_netmask(gateway, netmask)?;

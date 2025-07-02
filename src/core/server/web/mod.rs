@@ -76,7 +76,7 @@ pub async fn start(
     cache: AppCache,
     config: ConfigInfo,
 ) -> std::io::Result<()> {
-    let web_service = VntsWebService::new(cache, config);
+    let web_service = VntsWebService::new(cache, config).await;
     HttpServer::new(move || {
         let generated = generate();
         App::new()

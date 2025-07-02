@@ -47,7 +47,7 @@ impl NetworkInfo {
 }
 
 /// 客户端信息
-#[derive(Debug)]
+#[derive(Debug,Clone,Serialize,Deserialize)]
 pub struct ClientInfo {
     // 设备ID
     pub device_id: String,
@@ -68,9 +68,11 @@ pub struct ClientInfo {
     // 分配的ip
     pub virtual_ip: u32,
     // 建立的tcp连接发送端
+    #[serde(skip_serializing,skip_deserializing)]
     pub tcp_sender: Option<Sender<Vec<u8>>>,
     // wireguard客户端公钥
     pub wireguard: Option<[u8; 32]>,
+    #[serde(skip_serializing,skip_deserializing)]
     pub wg_sender: Option<Sender<(Vec<u8>, Ipv4Addr)>>,
     pub client_status: Option<ClientStatusInfo>,
     pub last_join_time: DateTime<Local>,
@@ -135,7 +137,7 @@ impl Default for ClientInfo {
         }
     }
 }
-#[derive(Debug)]
+#[derive(Debug,Clone,Serialize,Deserialize)]
 pub struct ClientStatusInfo {
     pub p2p_list: Vec<Ipv4Addr>,
     pub up_stream: u64,
