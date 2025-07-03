@@ -769,7 +769,18 @@ pub async fn set_ip(
     info.tcp_sender = register_request.tcp_sender;
     info.last_join_time = Local::now();
     info.timestamp = timestamp;
+    println!("info.client_secret_hash: {:#?}", info.client_secret_hash);
+    println!("info.client_secret: {}", info.client_secret);
+    println!("info.server_secret: {}", info.server_secret);
+    println!("info.address: {}", info.address);
+    println!("info.online: {}", info.online);
+    println!("info.wireguard: {:#?}", info.wireguard);
+    println!("info.virtual_ip: {}", info.virtual_ip);
+    println!("info.tcp_sender: {:#?}", info.tcp_sender);
+    println!("info.last_join_time: {}", info.last_join_time);
+    println!("info.timestamp: {}", info.timestamp);
     lock.epoch += 1;
+    
     let response = RegisterClientResponse {
         timestamp,
         virtual_ip: virtual_ip.into(),

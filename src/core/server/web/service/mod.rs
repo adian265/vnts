@@ -179,14 +179,34 @@ impl VntsWebService {
             let mut wg_data = wg_data_list[idx].clone();
             let device_id = d.device_id.clone();
             let group_id = d.group_id.clone();
-            let secret_key = d.secret_key.clone();
-            let public_key = d.public_key.clone();
+            // let secret_key = d.secret_key.clone();
+            // let mut public_key = d.public_key.clone();
+            // let mut public_key_o: Option<[u8; 32]> = Some(d.public_key.clone());
             let gateway = config.gateway;
             let netmask = config.netmask;
             println!("device_id: {:#?}", device_id);
-            // println!("group_id: {:#?}", group_id);
+            let w_d = CreateWgConfig{
+                vnts_endpoint: wg_data.config.vnts_endpoint.clone(),
+                private_key: wg_data.config.private_key.clone(),
+                persistent_keepalive: wg_data.config.persistent_keepalive,
+            };
+            let mut public_key: Option<[u8; 32]> = None;
+            let mut secret_key: Option<[u8; 32]> = None;
+            match VntsWebService::r_check_wg_config(&w_d) {
+                Ok((sec,pu)) => {
+                    public_key = Some(pu);
+                    secret_key = Some(sec);
+                }
+                Err(e) => {
+                    println!("check_wg_config error: {:#?}", e);
+                    public_key = Some(d.public_key.clone());
+                    secret_key = Some(d.secret_key.clone());
+                }
+            }
+            // let (secret_key, public_key) = VntsWebService::r_check_wg_config(&w_d);
             // println!("secret_key: {:#?}", secret_key);
             // println!("public_key: {:#?}", public_key);
+        
             // println!("gateway: {:#?}", gateway);
             // println!("netmask: {:#?}", netmask);
             // println!("\n\n");
@@ -208,12 +228,23 @@ impl VntsWebService {
                 address: SocketAddrV4::new(Ipv4Addr::UNSPECIFIED, 0).into(),
                 tcp_sender: None,
                 online: false,
-                wireguard: Some(public_key),
+                wireguard: (public_key),
                 // wireguard: general_purpose::STANDARD.decode(wg_data.config.public_key),
 
             };
             let response = set_ip(cache, register_client_request).await;
-            cache.wg_group_map.insert(public_key, d);
+            let wireguard_config = WireGuardConfig {
+                vnts_endpoint: wg_data.config.vnts_endpoint.clone(),
+                vnts_allowed_ips: wg_data.config.vnts_allowed_ips.clone(),
+                group_id: group_id.clone(),
+                device_id: device_id.clone(),
+                ip: virtual_ip,
+                prefix: wg_data.config.prefix,
+                persistent_keepalive: wg_data.config.persistent_keepalive,
+                secret_key:secret_key.expect("REASON"),
+                public_key:public_key.expect("REASON"),
+            };
+            cache.wg_group_map.insert(public_key.expect("REASON"), wireguard_config);
             let config = WgConfig {
                 vnts_endpoint: wg_data.config.vnts_endpoint,
                 vnts_public_key: wg_data.config.vnts_public_key,
@@ -224,109 +255,17 @@ impl VntsWebService {
                 prefix: wg_data.config.prefix,
                 persistent_keepalive: wg_data.config.persistent_keepalive,
             };
-            println!("WgConfig: {:#?}", config);
+            // println!("WgConfig: {:#?}", config);
             let g_list = VntsWebService::r_group_list(cache.clone());
-            println!("g_list: {:#?}", g_list);
+            // println!("g_list: {:#?}", g_list);
             idx += 1;
             println!("idx: {:#?}", idx);
-            // let network = Ipv4Network::with_netmask(gateway, netmask)?;
-            // let network = Ipv4Network::with_netmask(network.network(), netmask)?;
-            // let virtual_ip = if wg_data.virtual_ip.trim().is_empty() {
-            //     Ipv4Addr::UNSPECIFIED
-            // } else {
-            //     Ipv4Addr::from_str(&wg_data.virtual_ip).context("虚拟IP错误")?
-            // };
-            // let config = WgConfig {
-            // vnts_endpoint: wg_data.config.vnts_endpoint,
-            // vnts_public_key: general_purpose::STANDARD.encode(&self.config.wg_public_key),
-            // vnts_allowed_ips: network.to_string(),
-            // public_key: general_purpose::STANDARD.encode(public_key),
-            // private_key: general_purpose::STANDARD.encode(secret_key),
-            // ip: response.virtual_ip,
-            // prefix: network.prefix(),
-            // persistent_keepalive: wg_data.config.persistent_keepalive,
-            // };
-            // let wg_data = WGData {
-            //     group_id,
-            //     virtual_ip: response.virtual_ip,
-            //     device_id,
-            //     name: wg_data.name,
-            //     config,
-            // };
         }
-        
-        // let register_client_request = RegisterClientRequest {
-        //     group_id: group_id.clone(),
-        //     virtual_ip,
-        //     gateway,
-        //     netmask,
-        //     allow_ip_change: false,
-        //     device_id: device_id.clone(),
-        //     version: String::from("wg"),
-        //     name: wg_data.name.clone(),
-        //     client_secret: true,
-        //     client_secret_hash: vec![],
-        //     server_secret: true,
-        //     address: SocketAddrV4::new(Ipv4Addr::UNSPECIFIED, 0).into(),
-        //     tcp_sender: None,
-        //     online: false,
-        //     wireguard: Some(public_key),
-        // };
-        // let response = generate_ip(cache, register_client_request).await?;
-        // let wireguard_config = WireGuardConfig {
-        //     vnts_endpoint: wg_data.config.vnts_endpoint.clone(),
-        //     vnts_allowed_ips: network.to_string(),
-        //     group_id: group_id.clone(),
-        //     device_id: device_id.clone(),
-        //     ip: response.virtual_ip,
-        //     prefix: network.prefix(),
-        //     persistent_keepalive: wg_data.config.persistent_keepalive,
-        //     secret_key,
-        //     public_key,
-        // };
-        // let cfg = wireguard_config.clone();
-        // cache.wg_group_map.insert(public_key, wireguard_config);
-        // let config = WgConfig {
-        //     vnts_endpoint: wg_data.config.vnts_endpoint,
-        //     vnts_public_key: general_purpose::STANDARD.encode(&self.config.wg_public_key),
-        //     vnts_allowed_ips: network.to_string(),
-        //     public_key: general_purpose::STANDARD.encode(public_key),
-        //     private_key: general_purpose::STANDARD.encode(secret_key),
-        //     ip: response.virtual_ip,
-        //     prefix: network.prefix(),
-        //     persistent_keepalive: wg_data.config.persistent_keepalive,
-        // };
-        // let wg_data = WGData {
-        //     group_id,
-        //     virtual_ip: response.virtual_ip,
-        //     device_id,
-        //     name: wg_data.name,
-        //     config,
-        // };
-        // println!("create_wg_config: {:#?}", cfg);
-        // // 将 wg_data 序列化为 JSON 并写入文件
-        // match to_string_pretty(&cfg) {
-        //     Ok(json) => {
-        //         match File::create("wg_cfg.json") {
-        //             Ok(mut file) => {
-        //                 if let Err(e) = file.write_all(json.as_bytes()) {
-        //                     println!("写入文件失败: {}", e);
-        //                 }
-        //             }
-        //             Err(e) => {
-        //                 println!("创建文件失败: {}", e);
-        //             }
-        //         }
-        //     }
-        //     Err(e) => {
-        //         println!("序列化失败: {}", e);
-        //     }
-        // }
-        // Ok(wg_data)
     }
     pub async fn create_wg_config(&self, wg_data: CreateWGData) -> anyhow::Result<WGData> {
-        let device_id = wg_data.device_id.trim().to_string();
+        let mut device_id = wg_data.device_id.trim().to_string();
         let group_id = wg_data.group_id.trim().to_string();
+        let dev_name = wg_data.name.trim().to_string();
         if group_id.is_empty() {
             Err(anyhow!("组网id不能为空"))?;
         }
@@ -334,9 +273,10 @@ impl VntsWebService {
             Err(anyhow!("设备id不能为空"))?;
         }
         let cache = &self.cache;
+        // println!("create_wg_config wg_data: {:#?}", wg_data);
         let (secret_key, public_key) = Self::check_wg_config(&wg_data.config)?;
-        println!("secret_key: {:#?}", secret_key);
-        println!("public_key: {:#?}", public_key);
+        // println!("secret_key: {:#?}", secret_key);
+        // println!("public_key: {:#?}", public_key);
         let gateway = self.config.gateway;
         let netmask = self.config.netmask;
         let network = Ipv4Network::with_netmask(gateway, netmask)?;
@@ -387,6 +327,7 @@ impl VntsWebService {
             prefix: network.prefix(),
             persistent_keepalive: wg_data.config.persistent_keepalive,
         };
+        let mut d_id = dev_name.clone();
         let wg_data = WGData {
             group_id,
             virtual_ip: response.virtual_ip,
@@ -395,10 +336,12 @@ impl VntsWebService {
             config,
         };
         // println!("create_wg_config: {:#?}", cfg);
+        let cfg_f = d_id.clone()+"_cfg.json";
+        let data_f = d_id.clone()+"_data.json";
         // 将 wg_data 序列化为 JSON 并写入文件
         match to_string_pretty(&cfg) {
             Ok(json) => {
-                match File::create("wg_cfg.json") {
+                match File::create(cfg_f) {
                     Ok(mut file) => {
                         if let Err(e) = file.write_all(json.as_bytes()) {
                             println!("写入文件失败: {}", e);
@@ -413,26 +356,9 @@ impl VntsWebService {
                 println!("序列化失败: {}", e);
             }
         }
-        // match to_string_pretty(&response) {
-        //     Ok(json) => {
-        //         match File::create("wg_res.json") {
-        //             Ok(mut file) => {
-        //                 if let Err(e) = file.write_all(json.as_bytes()) {
-        //                     println!("写入文件失败: {}", e);
-        //                 }
-        //             }
-        //             Err(e) => {
-        //                 println!("创建文件失败: {}", e);
-        //             }
-        //         }
-        //     }
-        //     Err(e) => {
-        //         println!("序列化失败: {}", e);
-        //     }
-        // }
         match to_string_pretty(&wg_data) {
             Ok(json) => {
-                match File::create("wg_data.json") {
+                match File::create(data_f) {
                     Ok(mut file) => {
                         if let Err(e) = file.write_all(json.as_bytes()) {
                             println!("写入文件失败: {}", e);
@@ -449,7 +375,27 @@ impl VntsWebService {
         }
         Ok(wg_data)
     }
-        
+    fn r_check_wg_config(config: &CreateWgConfig) -> anyhow::Result<([u8; 32], [u8; 32])> {
+        match config.vnts_endpoint.to_socket_addrs() {
+            Ok(mut addr) => {
+                if let Some(addr) = addr.next() {
+                    if addr.ip().is_unspecified() || addr.port() == 0 {
+                        Err(anyhow!("服务端地址错误"))?
+                    }
+                }
+            }
+            Err(e) => Err(anyhow!("服务端地址解析失败:{}", e))?,
+        }
+
+        let private_key = general_purpose::STANDARD
+            .decode(&config.private_key)
+            .context("私钥错误")?;
+        let private_key: [u8; 32] = private_key.try_into().map_err(|_| anyhow!("私钥错误"))?;
+        let secret_key = boringtun::x25519::StaticSecret::from(private_key);
+        let public_key = *boringtun::x25519::PublicKey::from(&secret_key).as_bytes();
+
+        Ok((private_key, public_key))
+    }    
     fn check_wg_config(config: &CreateWgConfig) -> anyhow::Result<([u8; 32], [u8; 32])> {
         match config.vnts_endpoint.to_socket_addrs() {
             Ok(mut addr) => {

@@ -278,6 +278,8 @@ async fn main() {
     };
     let wg_secret_key = boringtun::x25519::StaticSecret::from(wg_secret_key);
     let wg_public_key = boringtun::x25519::PublicKey::from(&wg_secret_key);
+    // println!("wg私钥: {}", general_purpose::STANDARD.encode(&wg_secret_key));
+    // println!("wg公钥: {}", general_purpose::STANDARD.encode(&wg_public_key));
     let config = ConfigInfo {
         port,
         white_token,
